@@ -3,26 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRUD Usuarios - Node.js</title>
+    <title>UserVault — Gestión de Usuarios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Gestión de Usuarios</h1>
-        
+
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="app">
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- HEADER -->
+      <header class="page-header">
+        <div>
+          <h1 class="page-title">Gestión de Usuarios</h1>
+          <p class="page-subtitle">Agrega, edita y elimina registros fácilmente</p>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <span class="search-icon">⌕</span>
+            <input type="text" id="buscar" placeholder="Buscar usuario...">
+          </div>
+        </div>
+      </header>
+
+      <!-- FORM CARD -->
+      <div class="form-card" id="form-card">
+        <div class="form-card-header">
+          <h2 id="form-title">Nuevo Usuario</h2>
+          <span class="form-mode-badge" id="form-badge">CREAR</span>
+        </div>
         <form id="form-usuario">
-            <input type="text" id="nombre" placeholder="Nombre completo" required>
-            <input type="email" id="email" placeholder="Correo electrónico" required>
-            <button type="submit" id="btn-submit">Agregar Usuario</button>
+          <div class="input-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" placeholder="Naudy Noa" required autocomplete="off">
+          </div>
+          <div class="input-group">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" placeholder="naudy.noa@tecsup.edu.pe" required autocomplete="off">
+          </div>
+          <div class="form-actions">
+            <button type="button" id="btn-cancelar" class="btn-secondary" style="display:none">Cancelar</button>
+            <button type="submit" id="btn-submit" class="btn-primary">
+              <span class="btn-icon">+</span> Agregar Usuario
+            </button>
+          </div>
         </form>
-        
-        <hr>
+      </div>
 
-        <h2>Lista de Usuarios</h2>
-        <ul id="lista-usuarios">
-            </ul>
-    </div>
+      <!-- TOAST -->
+      <div id="toast" class="toast"></div>
 
-    <script src="scripts.js"></script>
+      <!-- USER LIST -->
+      <section class="list-section">
+        <div class="list-header">
+          <h2 class="list-title">Usuarios Registrados</h2>
+          <span class="list-count" id="list-count-badge">0 usuarios</span>
+        </div>
+
+        <div id="lista-usuarios" class="user-grid">
+          <!-- Cards generadas por JS -->
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display:none">
+          <div class="empty-icon">◌</div>
+          <p>No hay usuarios registrados aún.</p>
+          <span>¡Agrega el primero usando el formulario de arriba!</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="scripts.js"></script>
 </body>
 </html>

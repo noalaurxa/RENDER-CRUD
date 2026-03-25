@@ -1,67 +1,107 @@
 const express = require('express');
-const path = require('path');
-const app = express();
+const path    = require('path');
+const app     = express();
 
-// Middleware
+// ── Middleware ────────────────────────────────────────────
 app.use(express.json());
-// Servir archivos estáticos (HTML, CSS, JS) desde la carpeta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Base de datos temporal en memoria (se borra al reiniciar el servidor)
+// ── Base de datos en memoria ──────────────────────────────
 let usuarios = [];
 let contador = 1;
 
-// --- ENDPOINTS API ---
+// ── Validación básica ─────────────────────────────────────
+function validarUsuario(nombre, email) {
+  const errores = [];
+  if (!nombre || nombre.trim().length < 2) errores.push('El nombre debe tener al menos 2 caracteres.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errores.push('El email no tiene un formato válido.');
+  return errores;
+}
 
-// 1. Obtener todos los usuarios (READ)
+// ── ENDPOINTS ─────────────────────────────────────────────
+
+// GET /api/usuarios — Listar todos
 app.get('/api/usuarios', (req, res) => {
-    res.json(usuarios);
+  res.json(usuarios);
 });
 
-// 2. Crear un usuario (CREATE)
+// GET /api/usuarios/:id — Obtener uno
+app.get('/api/usuarios/:id', (req, res) => {
+  const id      = parseInt(req.params.id);
+  const usuario = usuarios.find(u => u.id === id);
+  if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+  res.json(usuario);
+});
+
+// POST /api/usuarios — Crear
 app.post('/api/usuarios', (req, res) => {
-    const { nombre, email } = req.body;
-    
-    if (!nombre || !email) {
-        return res.status(400).json({ mensaje: 'Nombre y email son obligatorios' });
-    }
+  const { nombre, email } = req.body;
+  const errores = validarUsuario(nombre, email);
+  if (errores.length) return res.status(400).json({ errores });
 
-    const nuevoUsuario = { id: contador++, nombre, email };
-    usuarios.push(nuevoUsuario);
-    res.status(201).json(nuevoUsuario);
+  // Email único
+  if (usuarios.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    return res.status(409).json({ errores: ['Ya existe un usuario con ese correo.'] });
+  }
+
+  const nuevoUsuario = {
+    id: contador++,
+    nombre: nombre.trim(),
+    email:  email.trim().toLowerCase(),
+    creadoEn: new Date().toISOString()
+  };
+  usuarios.push(nuevoUsuario);
+  res.status(201).json(nuevoUsuario);
 });
 
-// 3. Editar un usuario (UPDATE)
+// PUT /api/usuarios/:id — Actualizar
 app.put('/api/usuarios/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const { nombre, email } = req.body;
-    
-    const usuario = usuarios.find(u => u.id === id);
+  const id      = parseInt(req.params.id);
+  const usuario = usuarios.find(u => u.id === id);
+  if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
 
-    if (usuario) {
-        usuario.nombre = nombre || usuario.nombre;
-        usuario.email = email || usuario.email;
-        res.json(usuario);
-    } else {
-        res.status(404).json({ mensaje: 'Usuario no encontrado' });
-    }
+  const { nombre, email } = req.body;
+  const errores = validarUsuario(
+    nombre ?? usuario.nombre,
+    email  ?? usuario.email
+  );
+  if (errores.length) return res.status(400).json({ errores });
+
+  // Email único (excluyendo el mismo usuario)
+  if (email && usuarios.some(u => u.id !== id && u.email.toLowerCase() === email.toLowerCase())) {
+    return res.status(409).json({ errores: ['Ese correo ya está en uso por otro usuario.'] });
+  }
+
+  if (nombre) usuario.nombre = nombre.trim();
+  if (email)  usuario.email  = email.trim().toLowerCase();
+  usuario.actualizadoEn = new Date().toISOString();
+
+  res.json(usuario);
 });
 
-// 4. Eliminar un usuario (DELETE)
+// DELETE /api/usuarios/:id — Eliminar
 app.delete('/api/usuarios/:id', (req, res) => {
-    const id = parseInt(req.params.id);
-    const existe = usuarios.some(u => u.id === id);
+  const id = parseInt(req.params.id);
+  const idx = usuarios.findIndex(u => u.id === id);
+  if (idx === -1) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
 
-    if (existe) {
-        usuarios = usuarios.filter(u => u.id !== id);
-        res.json({ mensaje: 'Usuario eliminado' });
-    } else {
-        res.status(404).json({ mensaje: 'El usuario no existe' });
-    }
+  const eliminado = usuarios.splice(idx, 1)[0];
+  res.json({ mensaje: 'Usuario eliminado', usuario: eliminado });
 });
 
-// Servidor
+// GET /api/stats — Estadísticas básicas
+app.get('/api/stats', (req, res) => {
+  res.json({
+    total: usuarios.length,
+    ultimoId: contador - 1
+  });
+});
+
+// ── Fallback ──────────────────────────────────────────────
+app.use((req, res) => res.status(404).json({ mensaje: 'Ruta no encontrada' }));
+
+// ── Servidor ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`✅ Servidor funcionando en: http://localhost:${PORT}`);
+  console.log(`✅  UserVault corriendo en: http://localhost:${PORT}`);
 });
